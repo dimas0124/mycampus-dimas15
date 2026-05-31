@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smart Campus Mobile</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/4f46e5/ffffff/png?text=SC">
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <style>
+        /* LEVEL 8: VARIABEL CSS DUAL-THEME (LIGHT & DARK MODE) */
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #e0e7ff;
+            --bg-app: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #f1f5f9;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --skeleton-bg: #e2e8f0;
+        }
+
+        /* VARIABEL OVERRIDE SAAT KELAS DARK-MODE AKTIF */
+        .dark-mode {
+            --bg-app: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --primary-light: #312e81;
+            --skeleton-bg: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            background-color: #0f172a; /* Simulasi Emulator Luar */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* CONTAINER MOBILE-FIRST */
+        .phone-wrapper {
+            width: 100%;
+            max-width: 412px;
+            height: 100vh;
+            max-height: 892px; 
+            background-color: var(--bg-app);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        @media (min-width: 768px) {
+            .phone-wrapper {
+                border-radius: 40px;
+                border: 12px solid #334155;
+            }
+        }
+
+        /* TAMPILAN SCREEN SPA */
+        .app-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .screen-scrollable {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            padding-bottom: 110px;
+        }
+
+        .page-title-bar {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .page-title-bar h2 {
+            font-size: 1.4rem;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        /* SPLASH SCREEN */
+        #splash-screen {
+            display: flex;
+            background: linear-gradient(135deg, #4f46e5 0%, #312e81 100%);
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            z-index: 100;
+        }
+        .splash-logo { font-size: 4.5rem; animation: pulse 2s infinite; }
+        .splash-title { font-size: 1.8rem; font-weight: 700; margin-top: 15px; }
+
+        /* LOGIN PAGE */
+        #login-screen { background-color: var(--bg-card); justify-content: center; padding: 30px; }
+        .login-header { text-align: center; margin-bottom: 35px; }
+        .login-header h2 { font-size: 1.6rem; color: var(--text-main); }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; }
+        .input-box { width: 100%; padding: 14px 16px; border: 1.5px solid var(--border); border-radius: 12px; font-size: 0.95rem; outline: none; background-color: var(--bg-app); color: var(--text-main); }
+        .btn-primary { width: 100%; padding: 14px; background-color: var(--primary); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+
+        /* DASHBOARD SCREEN */
+        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .user-profile { display: flex; align-items: center; gap: 12px; }
+        .user-avatar { width: 45px; height: 45px; border-radius: 50%; background-color: var(--primary-light); display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: bold; }
+        .user-info h3 { font-size: 1rem; color: var(--text-main); }
+        .user-info p { font-size: 0.75rem; color: var(--text-muted); }
+        .info-academic-card { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; padding: 20px; border-radius: 20px; margin-bottom: 25px; }
+        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 25px; }
+        .menu-card { background-color: var(--bg-card); border: 1px solid var(--border); padding: 20px; border-radius: 16px; cursor: pointer; }
+        .menu-card .icon-wrapper { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 1.2rem; }
+        .today-schedule-banner { background-color: var(--primary-light); border-left: 4px solid var(--primary); padding: 12px 16px; border-radius: 0 12px 12px 0; margin-bottom: 20px; font-size: 0.85rem; color: var(--primary); font-weight: 600; }
+
+        /* JADWAL CARD */
+        .schedule-card { background-color: var(--bg-card); border: 1px solid var(--border); padding: 18px; border-radius: 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 16px; position: relative; }
+        .schedule-card.highlight-today { border: 2px solid var(--primary); background-color: var(--primary-light); }
+        .schedule-card.highlight-today::before { content: 'HARI INI'; position: absolute; top: -10px; right: 16px; background-color: var(--primary); color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+        .day-badge { width: 50px; height: 50px; border-radius: 12px; background-color: var(--border); color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; }
+        .schedule-card.highlight-today .day-badge { background-color: var(--primary); color: white; }
+        .schedule-details h4 { font-size: 0.95rem; color: var(--text-main); font-weight: 600; }
+        .schedule-details p { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: flex; gap: 10px; }
+
+        /* MISI TUGAS L6 */
+        .progress-mission-container { background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 20px; }
+        .progress-mission-text { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px; }
+        .progress-bar-bg { width: 100%; height: 8px; background-color: var(--border); border-radius: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #4f46e5, #10b981); border-radius: 10px; transition: width 0.4s ease; }
+        .mission-card { background-color: var(--bg-card); border: 1px solid var(--border); padding: 16px; border-radius: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px; cursor: pointer; }
+        .mission-card.completed { border-color: #d1fae5; background-color: rgba(16, 185, 129, 0.08); }
+        .mission-card.completed .mission-title { text-decoration: line-through; color: var(--text-muted); }
+        .mission-checkbox-btn { width: 24px; height: 24px; border-radius: 6px; border: 2px solid var(--text-muted); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.8rem; }
+        .mission-card.completed .mission-checkbox-btn { background-color: var(--success); border-color: var(--success); }
+        .mission-info { flex: 1; }
+        .mission-title { font-size: 0.9rem; color: var(--text-main); font-weight: 600; }
+        .mission-deadline { font-size: 0.75rem; color: var(--text-muted); margin-top: 3px; }
+        .mission-badge { font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 20px; text-transform: uppercase; }
+        .badge-pending { background-color: #fffbeb; color: #b45309; }
+        .dark-mode .badge-pending { background-color: #451a03; color: #fcd34d; }
+        .badge-completed { background-color: #d1fae5; color: #065f46; }
+
+        /* BERITA API L7 */
+        .news-card { background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 16px; }
+        .news-img-placeholder { width: 100%; height: 140px; background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 2rem; }
+        .dark-mode .news-img-placeholder { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: #fff; }
+        .news-content { padding: 16px; }
+        .news-tag { background-color: var(--primary-light); color: var(--primary); font-size: 0.65rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+        .news-title { font-size: 0.95rem; color: var(--text-main); font-weight: 700; line-height: 1.4; margin-bottom: 6px; }
+        .news-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px; }
+        .news-footer { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 10px; }
+
+        /* LEVEL 8: SKELETON LOADING COMPONENT & ANIMASI SHIMMER */
+        .skeleton-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .skeleton-element {
+            background-color: var(--skeleton-bg);
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+        .skeleton-element::after {
+            content: "";
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: translateX(-100%);
+            animation: shimmer 1.5s infinite;
+        }
+        .dark-mode .skeleton-element::after {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+        }
+        .skeleton-img { width: 100%; height: 120px; margin-bottom: 12px; border-radius: 10px; }
+        .skeleton-tag { width: 80px; height: 16px; margin-bottom: 8px; }
+        .skeleton-title { width: 90%; height: 20px; margin-bottom: 8px; }
+        .skeleton-text { width: 100%; height: 14px; margin-bottom: 6px; }
+
+        /* LEVEL 8: TOAST NOTIFICATION COMPONENT */
+        .toast-container {
+            position: absolute;
+            bottom: 85px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: #0f172a;
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            z-index: 200;
+            opacity: 0;
+            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .dark-mode .toast-container {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .toast-container.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* LEVEL 8: FLOATING ACTION BUTTON (FAB) */
+        .fab-refresh {
+            position: absolute;
+            bottom: 90px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+            z-index: 95;
+            cursor: pointer;
+            border: none;
+            font-size: 1.1rem;
+            transform: scale(1);
+            transition: transform 0.2s;
+        }
+        .fab-refresh:active { transform: scale(0.9); }
+
+        /* UI CONTROLLER BUTTONS */
+        .theme-toggle-btn {
+            background: var(--border);
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* STYLING TAMBAHAN KHUSUS MENU PROFIL YANG BARU & PROFESIONAL */
+        .profile-card-box {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .profile-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .profile-info-row:last-child {
+            border-bottom: none;
+        }
+        .profile-info-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .profile-info-value {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            font-weight: 600;
+            text-align: right;
+        }
+        
+        /* STYLING TAMBAHAN UNTUK INTERAKTIVITAS LINK DEVELOPER */
+        .profile-info-row a.dev-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: opacity 0.2s ease;
+        }
+        .profile-info-row a.dev-link:hover {
+            opacity: 0.8;
+        }
+
+        .btn-profile-action {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-copy-nim {
+            background-color: var(--primary-light);
+            color: var(--primary);
+        }
+        .btn-logout {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            margin-top: 16px;
+        }
+
+        /* BOTTOM NAVIGATION BAR */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; height: 72px;
+            background-color: var(--bg-card); border-top: 1px solid var(--border);
+            display: none; justify-content: space-around; align-items: center; z-index: 90;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; font-weight: 500; cursor: pointer; width: 18%; }
+        .nav-item i { font-size: 1.25rem; margin-bottom: 4px; }
+        .nav-item.active { color: var(--primary); font-weight: 600; }
+
+        /* ANIMASI */
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.06); opacity: 0.9; } }
+        @keyframes shimmer { 100% { transform: translateX(100%); } }
+    </style>
+</head>
+<body>
+
+    <div class="phone-wrapper" id="app-viewport">
+        
+        <div class="toast-container" id="app-toast">
+            <i class="fa-solid fa-circle-info" id="toast-icon"></i>
+            <span id="toast-text">Pesan notifikasi</span>
+        </div>
+
+        <button class="fab-refresh" id="fab-refresh-news" title="Refresh Berita">
+            <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
+        
+        <div id="splash-screen" class="app-screen">
+            <div>
+                <div class="splash-logo"><i class="fa-solid fa-graduation-cap"></i></div>
+                <h1 class="splash-title">SMART CAMPUS</h1>
+                <p style="font-size: 0.85rem; opacity: 0.8; margin-top: 5px;">Universitas Ma'soem</p>
+            </div>
+        </div>
+
+        <div id="login-screen" class="app-screen">
+            <div class="login-header">
+                <h2>Selamat Datang</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Masuk ke sistem akademik seluler</p>
+            </div>
+            <form id="form-login-internal" onsubmit="return false;">
+                <div class="form-group">
+                    <label>NIM Mahasiswa</label>
+                    <input type="text" id="nim" class="input-box" placeholder="Masukkan NIM Anda" required>
+                </div>
+                <div class="form-group">
+                    <label>Kata Sandi</label>
+                    <input type="password" id="password" class="input-box" placeholder="••••••••" required>
+                </div>
+                <button type="submit" id="btn-login-submit" class="btn-primary">Masuk</button>
+            </form>
+        </div>
+
+        <div id="dashboard-page" class="app-screen main-app-content">
+            <div class="screen-scrollable">
+                <div class="dash-header">
+                    <div class="user-profile">
+                        <div class="user-avatar">DL</div>
+                        <div class="user-info">
+                            <h3>Dimas Luqman</h3>
+                            <p>D3 Komputerisasi Akuntansi</p>
+                        </div>
+                    </div>
+                    <button class="theme-toggle-btn" id="btn-theme-toggle" title="Ubah Tema">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                </div>
+
+                <div class="info-academic-card">
+                    <p style="font-size: 0.8rem; opacity: 0.9; text-transform: uppercase;">Indeks Prestasi Kumulatif (IPK)</p>
+                    <h2 style="font-size: 2.2rem; font-weight: 700; margin: 5px 0;">3.85</h2>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; opacity: 0.9; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
+                        <span>Semester: 4 (Empat)</span>
+                        <span>SKS: 84</span>
+                    </div>
+                </div>
+
+                <div class="today-schedule-banner" id="dashboard-today-banner">
+                    <i class="fa-regular fa-clock" style="margin-right: 6px;"></i> Memeriksa jadwal harian...
+                </div>
+
+                <h4 style="color: var(--text-main); margin-bottom: 12px; font-size: 0.95rem;">Layanan Akademik</h4>
+                <div class="menu-grid">
+                    <div class="menu-card nav-shortcut-trigger" data-target="jadwal-page">
+                        <div class="icon-wrapper" style="background-color: #ecfdf5; color: #10b981;"><i class="fa-regular fa-calendar-days"></i></div>
+                        <h5 style="font-size: 0.9rem;">Jadwal Kuliah</h5>
+                        <p style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px;">Lihat kelas harian</p>
+                    </div>
+                    <div class="menu-card nav-shortcut-trigger" data-target="tugas-page">
+                        <div class="icon-wrapper" style="background-color: #eff6ff; color: #3b82f6;"><i class="fa-regular fa-clipboard"></i></div>
+                        <h5 style="font-size: 0.9rem;">Misi Tugas</h5>
+                        <p style="color: var(--text-muted); font-size: 0.7rem; margin-top: 2px;" id="dashboard-task-counter">0 misi aktif</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="jadwal-page" class="app-screen main-app-content">
+            <div class="screen-scrollable">
+                <div class="page-title-bar">
+                    <h2>Jadwal Kuliah</h2>
+                    <p style="color: var(--text-muted); font-size: 0.8rem;" id="current-date-info">Memuat data...</p>
+                </div>
+                <div id="schedule-dynamic-list"></div>
+            </div>
+        </div>
+
+        <div id="tugas-page" class="app-screen main-app-content">
+            <div class="screen-scrollable">
+                <div class="page-title-bar">
+                    <h2>Misi Akademik</h2>
+                    <p style="color: var(--text-muted); font-size: 0.8rem;">Selesaikan tantangan tugas perkuliahan</p>
+                </div>
+                <div class="progress-mission-container">
+                    <div class="progress-mission-text">
+                        <span>Total Kemajuan Misi</span>
+                        <span id="mission-percentage-label">0%</span>
+                    </div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="mission-progress-bar"></div></div>
+                </div>
+                <div id="mission-dynamic-list"></div>
+            </div>
+        </div>
+
+        <div id="notifikasi-page" class="app-screen main-app-content">
+            <div class="screen-scrollable">
+                <div class="page-title-bar">
+                    <h2>Berita Ma'soem</h2>
+                    <p style="color: var(--text-muted); font-size: 0.8rem;">Informasi dan artikel terkini seputar kampus</p>
+                </div>
+                <div id="news-api-dynamic-container"></div>
+            </div>
+        </div>
+
+        <div id="profil-page" class="app-screen main-app-content">
+            <div class="screen-scrollable">
+                <div class="page-title-bar">
+                    <h2>Profil Mahasiswa</h2>
+                </div>
+                
+                <div style="text-align: center; margin-bottom: 25px; padding: 10px 0;">
+                    <div class="user-avatar" style="width: 85px; height: 85px; font-size: 2.2rem; margin: 0 auto 14px; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);">DL</div>
+                    <h3 style="color: var(--text-main); font-size: 1.25rem; font-weight: 700;">Dimas Luqmanul Hakim</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">NIM: 242302015</p>
+                    
+                    <button class="btn-profile-action btn-copy-nim" id="btn-copy-nim-action">
+                        <i class="fa-regular fa-copy"></i> Salin Nomor NIM
+                    </button>
+                </div>
+
+                <h4 style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">About Developer</h4>
+                <div class="profile-card-box">
+                    <div class="profile-info-row">
+                        <span class="profile-info-label">Developer Name</span>
+                        <span class="profile-info-value">Dimas Luqmanul Hakim</span>
+                    </div>
+                    <div class="profile-info-row">
+                        <span class="profile-info-label">Online CV</span>
+                        <span class="profile-info-value">
+                            <a href="https://cv-mobile-dimas.vercel.app/" target="_blank" class="dev-link">
+                                View CV <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.75rem;"></i>
+                            </a>
+                        </span>
+                    </div>
+                    <div class="profile-info-row">
+                        <span class="profile-info-label">GitHub Profile</span>
+                        <span class="profile-info-value">
+                            <a href="https://github.com/dimas0124" target="_blank" class="dev-link">
+                                @dimasluqman <i class="fa-brands fa-github"></i>
+                            </a>
+                        </span>
+                    </div>
+                    <div class="profile-info-row">
+                        <span class="profile-info-label">Project Repository</span>
+                        <span class="profile-info-value">
+                            <a href="https://github.com/dimasluqman/smart-campus-pwa" target="_blank" class="dev-link">
+                                Smart Campus <i class="fa-solid fa-code-fork" style="font-size:0.75rem;"></i>
+                            </a>
+                        </span>
+                    </div>
+                </div>
+
+                <h4 style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Data Academic</h4>
+                <div class="profile-card-box">
+                    <div class="profile-info-row">
+                        <span class="profile-info-label">Program Studi</span>
+                        <span class="profile-info-value">D3 Komputerisasi Akuntansi</span>
+                    </div>
+                    <div class="profile-info-row">
+                        <span class="profile-info-label">Fakultas</span>
+                        <span class="profile-info-value">Fakultas Komputer</span>
+                    </div>
+                    <div class="profile-info-row">
+                        <span class="profile-info-label">Tahun Angkatan</span>
+                        <span class="profile-info-value">2024</span>
+                    </div>
+                    <div class="profile-info-row">
+                        <span class="profile-info-label">Dosen Wali</span>
+                        <span class="profile-info-value">Utami Aryanti, M.Kom</span>
+                    </div>
+                    <div class="profile-info-row">
+                        <span class="profile-info-label">Status Kuliah</span>
+                        <span class="profile-info-value" style="color: var(--success);"><i class="fa-solid fa-circle-check" style="font-size:0.75rem;"></i> Aktif</span>
+                    </div>
+                </div>
+
+                <h4 style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Kontak Instansi</h4>
+                <div class="profile-card-box">
+                    <div class="profile-info-row">
+                        <span class="profile-info-label">Email Kampus</span>
+                        <span class="profile-info-value">@masoemunevrsity.ac.id</span>
+                    </div>
+                    <div class="profile-info-row">
+                        <span class="profile-info-label">Lokasi Kampus</span>
+                        <span class="profile-info-value">Jalan Raya Cipacing No. 22</span>
+                    </div>
+                </div>
+
+                <button class="btn-profile-action btn-logout" id="btn-logout-trigger">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar dari Aplikasi
+                </button>
+            </div>
+        </div>
+
+        <nav class="bottom-nav" id="app-bottom-nav">
+            <div class="nav-item active" data-target="dashboard-page"><i class="fa-solid fa-house"></i><span>Beranda</span></div>
+            <div class="nav-item" data-target="jadwal-page"><i class="fa-regular fa-calendar"></i><span>Jadwal</span></div>
+            <div class="nav-item" data-target="tugas-page"><i class="fa-regular fa-file-lines"></i><span>Misi</span></div>
+            <div class="nav-item" data-target="notifikasi-page"><i class="fa-regular fa-newspaper"></i><span>Berita</span></div>
+            <div class="nav-item" data-target="profil-page"><i class="fa-regular fa-user"></i><span>Profil</span></div>
+        </nav>
+
+    </div>
+
+    <script>
+        // Registrasi Service Worker PWA Level 9
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js')
+                .then(function(registration) {
+                    console.log('PWA: Service Worker terdaftar dengan scope: ', registration.scope);
+                })
+                .catch(function(error) {
+                    console.log('PWA: Registrasi Service Worker Gagal: ', error);
+                });
+            });
+        }
+
+        $(document).ready(function() {
+            
+            // Toast Notification Engine
+            function showToast(message, iconClass = "fa-circle-info") {
+                const $toast = $('#app-toast');
+                $('#toast-text').text(message);
+                $('#toast-icon').attr('class', 'fa-solid ' + iconClass);
+                $toast.addClass('show');
+                setTimeout(function() {
+                    $toast.removeClass('show');
+                }, 3000);
+            }
+
+            // Smart Dark Mode Controller
+            if (localStorage.getItem('theme_preference') === 'dark') {
+                $('#app-viewport').addClass('dark-mode');
+                $('#btn-theme-toggle i').attr('class', 'fa-solid fa-sun');
+            }
+
+            $(document).on('click', '#btn-theme-toggle', function() {
+                const $viewport = $('#app-viewport');
+                $viewport.toggleClass('dark-mode');
+                
+                if ($viewport.hasClass('dark-mode')) {
+                    localStorage.setItem('theme_preference', 'dark');
+                    $(this).find('i').attr('class', 'fa-solid fa-sun');
+                    showToast("Mode Gelap diaktifkan", "fa-moon");
+                } else {
+                    localStorage.setItem('theme_preference', 'light');
+                    $(this).find('i').attr('class', 'fa-solid fa-moon');
+                    showToast("Mode Terang diaktifkan", "fa-sun");
+                }
+            });
+
+            // Logika Jadwal Kuliah Pintar JSON
+            const scheduleJSONData = [
+                { "id": 1, "hari": "Senin", "kode_hari": 1, "matkul": "Sistem Informasi Akuntansi", "jam": "08:00 - 10:30", "ruangan": "Lab Komputer 3" },
+                { "id": 2, "hari": "Selasa", "kode_hari": 2, "matkul": "Pemrograman Web Mobile", "jam": "11:00 - 13:30", "ruangan": "Lab Komputer 5" },
+                { "id": 3, "hari": "Rabu", "kode_hari": 3, "matkul": "Akuntansi Biaya", "jam": "08:00 - 10:00", "ruangan": "Ruang Teori 202" },
+                { "id": 4, "hari": "Kamis", "kode_hari": 4, "matkul": "Sistem Basis Data", "jam": "13:40 - 16:10", "ruangan": "Lab Komputer 2" },
+                { "id": 5, "hari": "Jumat", "kode_hari": 5, "matkul": "Pendidikan Karakter Ma'soem", "jam": "09:00 - 11:00", "ruangan": "Aula Utama" }
+            ];
+
+            const daftarHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+            const objekTanggal = new Date();
+            const indexHariIni = objekTanggal.getDay();
+            const namaHariIni = daftarHari[indexHariIni];
+            
+            $('#current-date-info').text(namaHariIni + ", " + objekTanggal.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }));
+
+            function renderSmartSchedule() {
+                let htmlKonten = "";
+                let adaKuliahHariIni = false;
+                let namaMatkulHariIni = "";
+
+                $.each(scheduleJSONData, function(index, item) {
+                    let kelasHighlight = "";
+                    if (item.kode_hari === indexHariIni) {
+                        kelasHighlight = "highlight-today";
+                        adaKuliahHariIni = true;
+                        namaMatkulHariIni = item.matkul;
+                    }
+                    htmlKonten += `
+                        <div class="schedule-card ${kelasHighlight}">
+                            <div class="day-badge"><span>${item.hari.substring(0,3)}</span></div>
+                            <div class="schedule-details">
+                                <h4>${item.matkul}</h4>
+                                <p>
+                                    <span><i class="fa-regular fa-clock"></i> ${item.jam}</span>
+                                    <span><i class="fa-regular fa-building"></i> ${item.ruangan}</span>
+                                </p>
+                            </div>
+                        </div>`;
+                });
+                $('#schedule-dynamic-list').html(htmlKonten);
+
+                if (adaKuliahHariIni) {
+                    $('#dashboard-today-banner').html(`<i class="fa-solid fa-circle-play" style="color:var(--primary)"></i> Hari ini kuliah: <strong>${namaMatkulHariIni}</strong>`);
+                } else {
+                    $('#dashboard-today-banner').html(`<i class="fa-solid fa-mug-hot"></i> Tidak ada kuliah hari <strong>${namaHariIni}</strong>.`).css('background-color', 'var(--border)').css('border-left-color', '#cbd5e1').css('color', 'var(--text-muted)');
+                }
+            }
+
+            // Logika Sistem Misi Akademik LocalStorage
+            const defaultMissions = [
+                { "id": "task_1", "title": "Membuat UI Mockup Smart Campus", "deadline": "Besok, 23:59 WIB", "completed": false },
+                { "id": "task_2", "title": "Mengerjakan Alur SPA Terintegrasi", "deadline": "Sisa 3 Hari", "completed": false },
+                { "id": "task_3", "title": "Normalisasi Database Kasir Toko Roti", "deadline": "Sisa 5 Hari", "completed": false },
+                { "id": "task_4", "title": "Menyusun Ringkasan SIA Modul Pembelian", "deadline": "Sisa 7 Hari", "completed": true }
+            ];
+
+            function getMissionData() {
+                const localData = localStorage.getItem('academic_missions');
+                if (!localData) {
+                    localStorage.setItem('academic_missions', JSON.stringify(defaultMissions));
+                    return defaultMissions;
+                }
+                return JSON.parse(localData);
+            }
+
+            function renderAcademicMissions() {
+                const missions = getMissionData();
+                let htmlMisi = "";
+                let totalMisi = missions.length;
+                let misiSelesai = 0;
+
+                $.each(missions, function(index, mission) {
+                    let statusSelesaiClass = mission.completed ? "completed" : "";
+                    let iconCheck = mission.completed ? '<i class="fa-solid fa-check"></i>' : "";
+                    let badgeLabel = mission.completed ? "Completed" : "Pending";
+                    let badgeClass = mission.completed ? "badge-completed" : "badge-pending";
+
+                    if (mission.completed) misiSelesai++;
+
+                    htmlMisi += `
+                        <div class="mission-card ${statusSelesaiClass}" data-id="${mission.id}">
+                            <div class="mission-checkbox-btn">${iconCheck}</div>
+                            <div class="mission-info">
+                                <div class="mission-title">${mission.title}</div>
+                                <div class="mission-deadline"><i class="fa-regular fa-clock"></i> Tenggat: ${mission.deadline}</div>
+                            </div>
+                            <div class="mission-badge ${badgeClass}">${badgeLabel}</div>
+                        </div>`;
+                });
+
+                $('#mission-dynamic-list').html(htmlMisi);
+
+                let hasilPersen = totalMisi > 0 ? Math.round((misiSelesai / totalMisi) * 100) : 0;
+                $('#mission-percentage-label').text(hasilPersen + "%");
+                $('#mission-progress-bar').css('width', hasilPersen + "%");
+
+                let sisaMisiAktif = totalMisi - misiSelesai;
+                $('#dashboard-task-counter').text(sisaMisiAktif + " misi aktif");
+            }
+
+            $(document).on('click', '.mission-checkbox-btn, .mission-card', function(e) {
+                e.stopPropagation();
+                const cardMisi = $(this).closest('.mission-card');
+                const idMisiYgDiKlik = cardMisi.data('id');
+                const daftarMisiSkrg = getMissionData();
+                let judulMisi = "";
+                let statusTerbaru = false;
+
+                $.each(daftarMisiSkrg, function(index, mission) {
+                    if (mission.id === idMisiYgDiKlik) {
+                        mission.completed = !mission.completed;
+                        judulMisi = mission.title;
+                        statusTerbaru = mission.completed;
+                        return false;
+                    }
+                });
+
+                localStorage.setItem('academic_missions', JSON.stringify(daftarMisiSkrg));
+                renderAcademicMissions();
+
+                if(statusTerbaru) {
+                    showToast("Misi Selesai: " + judulMisi.substring(0, 18) + "...", "fa-circle-check");
+                } else {
+                    showToast("Misi dikembalikan ke Pending", "fa-circle-exclamation");
+                }
+            });
+
+            // Logika Berita API + Skeleton Loading
+            function fetchMasoemCampusNewsAPI() {
+                let skeletonHTML = "";
+                for(let i = 0; i < 2; i++) {
+                    skeletonHTML += `
+                        <div class="skeleton-card">
+                            <div class="skeleton-element skeleton-img"></div>
+                            <div class="skeleton-element skeleton-tag"></div>
+                            <div class="skeleton-element skeleton-title"></div>
+                            <div class="skeleton-element skeleton-text"></div>
+                            <div class="skeleton-element skeleton-text" style="width: 60%"></div>
+                        </div>`;
+                }
+                $('#news-api-dynamic-container').html(skeletonHTML);
+
+                $.ajax({
+                    url: 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://masoemuniversitas.github.io/news-api/data.json'),
+                    type: 'GET',
+                    dataType: 'json',
+                    error: function() {
+                        setTimeout(function() {
+                            renderNewsUI(getFallbackMasoemNewsData());
+                        }, 1200);
+                    },
+                    success: function(response) {
+                        setTimeout(function() {
+                            try {
+                                let cleanData = JSON.parse(response.contents);
+                                renderNewsUI(cleanData.articles);
+                            } catch(e) {
+                                renderNewsUI(getFallbackMasoemNewsData());
+                            }
+                        }, 1200);
+                    }
+                });
+            }
+
+            function getFallbackMasoemNewsData() {
+                return [
+                    {
+                        "kategori": "PRESTASI KAMPUS",
+                        "judul": "Mahasiswa Komputerisasi Akuntansi Universitas Ma'soem Raih Juara Kompetisi Aplikasi Bisnis",
+                        "deskripsi": "Inovasi pengembangan rancang bangun aplikasi keuangan mobile buatan mahasiswa D3 Komputerisasi Akuntansi sukses meraih apresiasi tinggi di tingkat regional.",
+                        "icon": "🏆",
+                        "tanggal": "30 Mei 2026",
+                        "penulis": "Humas Ma'soem"
+                    },
+                    {
+                        "kategori": "INFO AKADEMIK",
+                        "judul": "Universitas Ma'soem Selenggarakan Workshop Pemrograman Web Mobile Modern",
+                        "deskripsi": "Fakultas Komputer mengadakan pelatihan intensif pembangunan Single Page Application (SPA) dan Progressive Web Apps (PWA) guna mempersiapkan kompetensi digital lulusan.",
+                        "icon": "💻",
+                        "tanggal": "28 Mei 2026",
+                        "penulis": "Fakultas Komputer"
+                    }
+                ];
+            }
+
+            function renderNewsUI(articles) {
+                let htmlBerita = "";
+                $.each(articles, function(index, article) {
+                    htmlBerita += `
+                        <div class="news-card">
+                            <div class="news-img-placeholder"><span>${article.icon || '📰'}</span></div>
+                            <div class="news-content">
+                                <span class="news-tag">${article.kategori}</span>
+                                <h4 class="news-title">${article.judul}</h4>
+                                <p class="news-desc">${article.deskripsi}</p>
+                                <div class="news-footer">
+                                    <span><i class="fa-regular fa-user"></i> ${article.penulis}</span>
+                                    <span><i class="fa-regular fa-calendar"></i> ${article.tanggal}</span>
+                                </div>
+                            </div>
+                        </div>`;
+                });
+                $('#news-api-dynamic-container').html(htmlBerita);
+            }
+
+            $(document).on('click', '#fab-refresh-news', function() {
+                fetchMasoemCampusNewsAPI();
+                showToast("Berita Universitas Ma'soem diperbarui", "fa-arrows-rotate");
+            });
+
+            // LOGIKA INTERAKTIF TAMBAHAN PADA MENU PROFIL BARU (JQUERY)
+            $(document).on('click', '#btn-copy-nim-action', function() {
+                navigator.clipboard.writeText("242302015");
+                showToast("NIM 242302015 Berhasil Disalin", "fa-copy");
+            });
+
+            $(document).on('click', '#btn-logout-trigger', function() {
+                $('#app-bottom-nav').hide();
+                $('.main-app-content').hide();
+                $('#nim').val('');
+                $('#password').val('');
+                $('#login-screen').css('display', 'flex').hide().fadeIn(300);
+                showToast("Berhasil logout dari sistem", "fa-arrow-right-from-bracket");
+            });
+
+            renderSmartSchedule();
+            renderAcademicMissions();
+            fetchMasoemCampusNewsAPI();
+
+            // Logika Routing Engine SPA
+            function navigateToPage(targetScreenId) {
+                $('.main-app-content').hide();
+                $('#' + targetScreenId).css('display', 'flex').hide().fadeIn(220);
+                $('.nav-item').removeClass('active');
+                $('.nav-item[data-target="' + targetScreenId + '"]').addClass('active');
+
+                if (targetScreenId === 'notifikasi-page') {
+                    $('#fab-refresh-news').css('display', 'flex');
+                } else {
+                    $('#fab-refresh-news').hide();
+                }
+            }
+
+            // Alur Splash Screen
+            $('#splash-screen').css('display', 'flex');
+            setTimeout(function() {
+                $('#splash-screen').fadeOut(400, function() {
+                    $('#login-screen').css('display', 'flex').hide().fadeIn(300);
+                });
+            }, 1500);
+
+            // Button Login Event
+            $(document).on('click', '#btn-login-submit', function() {
+                if($('#nim').val().trim() !== "" && $('#password').val().trim() !== "") {
+                    $('#login-screen').fadeOut(300, function() {
+                        navigateToPage('dashboard-page');
+                        $('#app-bottom-nav').css('display', 'flex').hide().fadeIn(300);
+                        showToast("Berhasil Masuk Sistem", "fa-circle-check");
+                    });
+                } else {
+                    showToast("NIM dan Kata Sandi wajib diisi!", "fa-triangle-exclamation");
+                }
+            });
+
+            // Bottom Nav Event
+            $(document).on('click', '.nav-item', function() {
+                navigateToPage($(this).data('target'));
+            });
+
+            // Dashboard Shortcut Event
+            $(document).on('click', '.nav-shortcut-trigger', function() {
+                navigateToPage($(this).data('target'));
+            });
+        });
+    </script>
+</body>
+</html>
