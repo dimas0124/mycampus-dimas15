@@ -14,6 +14,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Tambahan Library Html5-QRCode untuk Mengakses Kamera & Scanning Asli HP -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
     
     <style>
         /* LEVEL 8: VARIABEL CSS DUAL-THEME (LIGHT & DARK MODE) */
@@ -400,6 +402,17 @@
             overflow: hidden;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
         }
+        
+        /* Mengatur agar video streams mengisi penuh viewfinder tanpa meluap keluar */
+        .camera-viewfinder video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
         .scanner-laser {
             width: 100%;
             height: 3px;
@@ -409,6 +422,7 @@
             left: 0;
             box-shadow: 0 0 8px var(--danger);
             animation: scanMotion 2s linear infinite;
+            z-index: 5; /* Di atas video element */
         }
         .scanner-overlay-text {
             position: absolute;
@@ -420,6 +434,7 @@
             font-weight: 500;
             background: rgba(0,0,0,0.6);
             padding: 4px 0;
+            z-index: 5; /* Di atas video element */
         }
         .scanner-actions {
             display: flex;
@@ -560,9 +575,10 @@
                 </div>
                 
                 <div class="scanner-container">
-                    <div class="camera-viewfinder">
+                    <!-- Ditambahkan id="interactive-cam-view" agar library bisa menyuntikkan video stream langsung -->
+                    <div class="camera-viewfinder" id="interactive-cam-view">
                         <div class="scanner-laser"></div>
-                        <div style="display: flex; height: 100%; align-items: center; justify-content: center; color: #64748b;">
+                        <div id="camera-placeholder-icon" style="display: flex; height: 100%; align-items: center; justify-content: center; color: #64748b;">
                             <i class="fa-solid fa-camera fa-2xl" style="opacity: 0.25;"></i>
                         </div>
                         <div class="scanner-overlay-text">Mencari QR Code...</div>
@@ -572,6 +588,7 @@
                         <button class="btn-scan-action" id="btn-toggle-flash">
                             <i class="fa-solid fa-bolt"></i> Flash
                         </button>
+                        <!-- Mengubah fungsi tombol dari sekadar mock-scan menjadi pemicu Start/Stop Kamera HP Asli -->
                         <button class="btn-scan-action btn-scan-primary" id="btn-trigger-mock-scan">
                             <i class="fa-solid fa-expand"></i> Ambil Pindaian
                         </button>
@@ -979,6 +996,7 @@
             });
 
             $(document).on('click', '#btn-logout-trigger', function() {
+                stopQrEngine(); // Hentikan kamera secara aman saat logout
                 $('#app-bottom-nav').hide();
                 $('.main-app-content').hide();
                 $('#nim').val('');
@@ -987,30 +1005,107 @@
                 showToast("Berhasil logout dari sistem", "fa-arrow-right-from-bracket");
             });
 
-            // LOGIKA INTERAKTIF HALAMAN SCANNER BARU
+            // LOGIKA ENGINE CAMERA & QR SCANNER HARDWARE LEVEL 10
+            let html5QrScanner = null;
+            let cameraActiveState = false;
             let flashState = false;
-            $(document).on('click', '#btn-toggle-flash', function() {
-                flashState = !flashState;
-                if(flashState) {
-                    $(this).html('<i class="fa-solid fa-bolt-slash"></i> Flash Off').css('background-color', 'var(--primary-light)').css('color', 'var(--primary)');
-                    showToast("Flash Kamera Diaktifkan", "fa-bolt");
+
+            function startQrEngine() {
+                $('#camera-placeholder-icon').hide();
+                
+                html5QrScanner = new Html5Qrcode("interactive-cam-view");
+                const configSettings = { 
+                    fps: 15, 
+                    qrbox: { width: 200, height: 200 },
+                    aspectRatio: 1.0
+                };
+
+                // Membuka kamera belakang HP secara default (environment)
+                html5QrScanner.start(
+                    { facingMode: "environment" }, 
+                    configSettings,
+                    onScanSuccess,
+                    onScanFailure
+                ).then(() => {
+                    cameraActiveState = true;
+                    $('#btn-trigger-mock-scan').html('<i class="fa-solid fa-stop"></i> Hentikan Kamera').addClass('btn-scan-danger').css('background-color', 'var(--danger)');
+                    showToast("Kamera HP Berhasil Terbuka", "fa-camera");
+                }).catch(err => {
+                    console.error("Gagal membuka kamera hardware: ", err);
+                    $('#camera-placeholder-icon').show();
+                    showToast("Izin Kamera Ditolak / Tidak Ditemukan", "fa-triangle-exclamation");
+                });
+            }
+
+            function stopQrEngine() {
+                if (html5QrScanner && cameraActiveState) {
+                    html5QrScanner.stop().then(() => {
+                        cameraActiveState = false;
+                        flashState = false;
+                        $('#interactive-cam-view').html(`
+                            <div class="scanner-laser"></div>
+                            <div id="camera-placeholder-icon" style="display: flex; height: 100%; align-items: center; justify-content: center; color: #64748b;">
+                                <i class="fa-solid fa-camera fa-2xl" style="opacity: 0.25;"></i>
+                            </div>
+                            <div class="scanner-overlay-text">Mencari QR Code...</div>
+                        `);
+                        $('#btn-trigger-mock-scan').html('<i class="fa-solid fa-expand"></i> Ambil Pindaian').removeClass('btn-scan-danger').css('background-color', 'var(--primary)');
+                        $('#btn-toggle-flash').html('<i class="fa-solid fa-bolt"></i> Flash').css('background-color', 'var(--bg-card)').css('color', 'var(--text-main)');
+                        showToast("Kamera Dinonaktifkan", "fa-video-slash");
+                    }).catch(err => console.error("Gagal mematikan kamera safely: ", err));
+                }
+            }
+
+            function onScanSuccess(decodedText, decodedResult) {
+                // Menangani hasil pindaian sukses
+                showToast("QR Code Berhasil Dipindai!", "fa-circle-check");
+                $('#qr-result-text').text(decodedText).css('color', 'var(--success)').css('font-style', 'normal').css('font-weight', '600');
+                
+                // Berikan feedback getaran kecil (jika didukung perangkat smartphone)
+                if (navigator.vibrate) navigator.vibrate(100);
+                
+                stopQrEngine();
+            }
+
+            function onScanFailure(error) {
+                // Berjalan silent untuk scanning berkelanjutan frame-by-frame
+            }
+
+            // Aksi Tombol Ambil Pindaian (Sekarang berfungsi sebagai Start/Stop Toggle Kamera)
+            $(document).on('click', '#btn-trigger-mock-scan', function() {
+                if (!cameraActiveState) {
+                    startQrEngine();
                 } else {
-                    $(this).html('<i class="fa-solid fa-bolt"></i> Flash').css('background-color', 'var(--bg-card)').css('color', 'var(--text-main)');
-                    showToast("Flash Kamera Dimatikan", "fa-bolt-slash");
+                    stopQrEngine();
                 }
             });
 
-            $(document).on('click', '#btn-trigger-mock-scan', function() {
-                showToast("QR Code Berhasil Dipindai!", "fa-circle-check");
-                
-                const mockResults = [
-                    "PRESENSI_SUKSES_MK_PEMROGRAMAN_WEB_MOBILE",
-                    "RUANGAN_LAB_KOMPUTER_5_TERVERIFIKASI",
-                    "E-LIBRARY_BOOK_ID_99210_AKUNTANSI_BIAYA",
-                    "GATE_ACCESS_PERPUSTAKAAN_MASOEM_OPEN"
-                ];
-                const finalResult = mockResults[Math.floor(Math.random() * mockResults.length)];
-                $('#qr-result-text').text(finalResult).css('color', 'var(--success)').css('font-style', 'normal').css('font-weight', '600');
+            // Kontrol Flash / Senter Perangkat HP Asli
+            $(document).on('click', '#btn-toggle-flash', function() {
+                if (!cameraActiveState) {
+                    showToast("Aktifkan kamera terlebih dahulu!", "fa-triangle-exclamation");
+                    return;
+                }
+
+                flashState = !flashState;
+                if(flashState) {
+                    html5QrScanner.applyVideoConstraints({
+                        advanced: [{ torch: true }]
+                    }).then(() => {
+                        $(this).html('<i class="fa-solid fa-bolt-slash"></i> Flash Off').css('background-color', 'var(--primary-light)').css('color', 'var(--primary)');
+                        showToast("Flash Kamera Diaktifkan", "fa-bolt");
+                    }).catch(err => {
+                        showToast("Perangkat tidak mendukung Torch/Flash", "fa-triangle-exclamation");
+                        flashState = false;
+                    });
+                } else {
+                    html5QrScanner.applyVideoConstraints({
+                        advanced: [{ torch: false }]
+                    }).then(() => {
+                        $(this).html('<i class="fa-solid fa-bolt"></i> Flash').css('background-color', 'var(--bg-card)').css('color', 'var(--text-main)');
+                        showToast("Flash Kamera Dimatikan", "fa-bolt-slash");
+                    }).catch(err => console.error(err));
+                }
             });
 
             renderSmartSchedule();
@@ -1019,6 +1114,11 @@
 
             // Logika Routing Engine SPA
             function navigateToPage(targetScreenId) {
+                // Hentikan aktivitas kamera jika pengguna berpindah ke halaman lain selain QR Scan
+                if (targetScreenId !== 'qr-scanner-page') {
+                    stopQrEngine();
+                }
+
                 $('.main-app-content').hide();
                 $('#' + targetScreenId).css('display', 'flex').hide().fadeIn(220);
                 $('.nav-item').removeClass('active');
