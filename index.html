@@ -348,21 +348,115 @@
             margin-top: 16px;
         }
 
-        /* BOTTOM NAVIGATION BAR */
+        /* BOTTOM NAVIGATION BAR - FIX POSITION PERMANEN DI BAWAH */
         .bottom-nav {
-            position: absolute;
-            bottom: 0; left: 0; width: 100%; height: 72px;
-            background-color: var(--bg-card); border-top: 1px solid var(--border);
-            display: none; justify-content: space-around; align-items: center; z-index: 90;
+            position: fixed; /* Berubah dari absolute ke fixed agar melayang permanen */
+            bottom: 0; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%; 
+            max-width: 412px; /* Menyesuaikan max-width phone wrapper */
+            height: 72px;
+            background-color: var(--bg-card); 
+            border-top: 1px solid var(--border);
+            display: none; 
+            justify-content: space-around; 
+            align-items: center; 
+            z-index: 150; /* Z-Index tinggi agar selalu di atas konten scrollable */
             padding-bottom: env(safe-area-inset-bottom);
         }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; font-weight: 500; cursor: pointer; width: 18%; }
+        
+        /* Penyesuaian Lebar Item Agar Muat 6 Menu dengan Sempurna */
+        .nav-item { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            color: var(--text-muted); 
+            text-decoration: none; 
+            font-size: 0.7rem; 
+            font-weight: 500; 
+            cursor: pointer; 
+            width: 16%; 
+        }
         .nav-item i { font-size: 1.25rem; margin-bottom: 4px; }
         .nav-item.active { color: var(--primary); font-weight: 600; }
+
+        /* STYLING HALAMAN QR SCANNER SYSTEM LEVEL 10 */
+        .scanner-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            margin-top: 10px;
+        }
+        .camera-viewfinder {
+            width: 250px;
+            height: 250px;
+            background-color: #000000;
+            border: 4px solid var(--primary);
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+        .scanner-laser {
+            width: 100%;
+            height: 3px;
+            background-color: var(--danger);
+            position: absolute;
+            top: 0;
+            left: 0;
+            box-shadow: 0 0 8px var(--danger);
+            animation: scanMotion 2s linear infinite;
+        }
+        .scanner-overlay-text {
+            position: absolute;
+            bottom: 15px;
+            width: 100%;
+            text-align: center;
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 0;
+        }
+        .scanner-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            width: 100%;
+        }
+        .btn-scan-action {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+        .btn-scan-primary {
+            background-color: var(--primary);
+            color: #ffffff;
+            border: none;
+        }
 
         /* ANIMASI */
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.06); opacity: 0.9; } }
         @keyframes shimmer { 100% { transform: translateX(100%); } }
+        @keyframes scanMotion {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+        }
     </style>
 </head>
 <body>
@@ -458,6 +552,39 @@
             </div>
         </div>
 
+        <div id="qr-scanner-page" class="app-screen main-app-content">
+            <div class="screen-scrollable">
+                <div class="page-title-bar">
+                    <h2>QR Scanner</h2>
+                    <p style="color: var(--text-muted); font-size: 0.8rem;">Pindai kode QR Smart Campus Ma'soem</p>
+                </div>
+                
+                <div class="scanner-container">
+                    <div class="camera-viewfinder">
+                        <div class="scanner-laser"></div>
+                        <div style="display: flex; height: 100%; align-items: center; justify-content: center; color: #64748b;">
+                            <i class="fa-solid fa-camera fa-2xl" style="opacity: 0.25;"></i>
+                        </div>
+                        <div class="scanner-overlay-text">Mencari QR Code...</div>
+                    </div>
+                    
+                    <div class="scanner-actions">
+                        <button class="btn-scan-action" id="btn-toggle-flash">
+                            <i class="fa-solid fa-bolt"></i> Flash
+                        </button>
+                        <button class="btn-scan-action btn-scan-primary" id="btn-trigger-mock-scan">
+                            <i class="fa-solid fa-expand"></i> Ambil Pindaian
+                        </button>
+                    </div>
+                    
+                    <div class="profile-card-box" style="margin-top: 24px; width: 100%;">
+                        <h5 style="color: var(--text-main); font-size: 0.85rem; margin-bottom: 6px;">Hasil Pindaian Terakhir:</h5>
+                        <p id="qr-result-text" style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Belum ada data dipindai.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="tugas-page" class="app-screen main-app-content">
             <div class="screen-scrollable">
                 <div class="page-title-bar">
@@ -519,14 +646,14 @@
                         <span class="profile-info-label">GitHub Profile</span>
                         <span class="profile-info-value">
                             <a href="https://github.com/dimas0124" target="_blank" class="dev-link">
-                                @dimas0124 <i class="fa-brands fa-github"></i>
+                                @dimasluqman <i class="fa-brands fa-github"></i>
                             </a>
                         </span>
                     </div>
                     <div class="profile-info-row">
                         <span class="profile-info-label">Project Repository</span>
                         <span class="profile-info-value">
-                            <a href="https://github.com/dimas0124/mycampus-dimas15" target="_blank" class="dev-link">
+                            <a href="https://github.com/dimasluqman/smart-campus-pwa" target="_blank" class="dev-link">
                                 Smart Campus <i class="fa-solid fa-code-fork" style="font-size:0.75rem;"></i>
                             </a>
                         </span>
@@ -578,6 +705,7 @@
         <nav class="bottom-nav" id="app-bottom-nav">
             <div class="nav-item active" data-target="dashboard-page"><i class="fa-solid fa-house"></i><span>Beranda</span></div>
             <div class="nav-item" data-target="jadwal-page"><i class="fa-regular fa-calendar"></i><span>Jadwal</span></div>
+            <div class="nav-item" data-target="qr-scanner-page"><i class="fa-solid fa-qrcode"></i><span>QR Scan</span></div>
             <div class="nav-item" data-target="tugas-page"><i class="fa-regular fa-file-lines"></i><span>Misi</span></div>
             <div class="nav-item" data-target="notifikasi-page"><i class="fa-regular fa-newspaper"></i><span>Berita</span></div>
             <div class="nav-item" data-target="profil-page"><i class="fa-regular fa-user"></i><span>Profil</span></div>
@@ -844,7 +972,7 @@
                 showToast("Berita Universitas Ma'soem diperbarui", "fa-arrows-rotate");
             });
 
-            // LOGIKA INTERAKTIF TAMBAHAN PADA MENU PROFIL BARU (JQUERY)
+            // LOGIKA INTERAKTIF TAMBAHAN PADA MENU PROFIL (JQUERY)
             $(document).on('click', '#btn-copy-nim-action', function() {
                 navigator.clipboard.writeText("242302015");
                 showToast("NIM 242302015 Berhasil Disalin", "fa-copy");
@@ -857,6 +985,32 @@
                 $('#password').val('');
                 $('#login-screen').css('display', 'flex').hide().fadeIn(300);
                 showToast("Berhasil logout dari sistem", "fa-arrow-right-from-bracket");
+            });
+
+            // LOGIKA INTERAKTIF HALAMAN SCANNER BARU
+            let flashState = false;
+            $(document).on('click', '#btn-toggle-flash', function() {
+                flashState = !flashState;
+                if(flashState) {
+                    $(this).html('<i class="fa-solid fa-bolt-slash"></i> Flash Off').css('background-color', 'var(--primary-light)').css('color', 'var(--primary)');
+                    showToast("Flash Kamera Diaktifkan", "fa-bolt");
+                } else {
+                    $(this).html('<i class="fa-solid fa-bolt"></i> Flash').css('background-color', 'var(--bg-card)').css('color', 'var(--text-main)');
+                    showToast("Flash Kamera Dimatikan", "fa-bolt-slash");
+                }
+            });
+
+            $(document).on('click', '#btn-trigger-mock-scan', function() {
+                showToast("QR Code Berhasil Dipindai!", "fa-circle-check");
+                
+                const mockResults = [
+                    "PRESENSI_SUKSES_MK_PEMROGRAMAN_WEB_MOBILE",
+                    "RUANGAN_LAB_KOMPUTER_5_TERVERIFIKASI",
+                    "E-LIBRARY_BOOK_ID_99210_AKUNTANSI_BIAYA",
+                    "GATE_ACCESS_PERPUSTAKAAN_MASOEM_OPEN"
+                ];
+                const finalResult = mockResults[Math.floor(Math.random() * mockResults.length)];
+                $('#qr-result-text').text(finalResult).css('color', 'var(--success)').css('font-style', 'normal').css('font-weight', '600');
             });
 
             renderSmartSchedule();
